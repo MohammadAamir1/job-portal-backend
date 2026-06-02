@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 
 export const register = async (req, res) => {
   try {
-    const { fullname, email, phoneNumber, password, role } = req.body;
-    if (!fullname || !email || !phoneNumber || !password || !role) {
+    const { fullName, email, phoneNumber, password, role } = req.body;
+    if (!fullName || !email || !phoneNumber || !password || !role) {
       return res.status(400).json({
         message: "Something is missing",
         success: false,
@@ -21,7 +21,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await User.create({
-      fullname,
+      fullName,
       email,
       phoneNumber,
       password: hashedPassword,
@@ -42,7 +42,7 @@ export const login = async (req, res) => {
     if (!email || !password || !role) {
       return res.status(400).json({
         message: "Something is missing",
-        success: false,
+        success: false
       });
     }
     let user = await User.findOne({ email });
@@ -60,7 +60,7 @@ export const login = async (req, res) => {
       });
     }
     // check role is correct or not
-    if ((role = !user.role)) {
+    if ((role !== user.role)) {
       return res.status(400).json({
         message: "Account doesn't exist with current role.",
         success: false,
@@ -76,7 +76,7 @@ export const login = async (req, res) => {
 
     user = {
       _id: user._id,
-      fullname: user.fullname,
+      fullname: user.fullName,
       email: user.email,
       phoneNumber: user.phoneNumber,
       role: user.role,
@@ -113,17 +113,20 @@ export const logout = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { fullname, email, phoneNumber, bio, skills } = req.body;
+    const { fullName, email, phoneNumber, bio, skills } = req.body;
     const file = req.file;
-    if (!fullname || !email || !phoneNumber || !bio || !skills) {
-      return res.status(400).json({
-        message: "Something is missing",
-        success: false,
-      });
+    // if (!fullName || !email || !phoneNumber || !bio || !skills) {
+    //   return res.status(400).json({
+    //     message: "Something is missing",
+    //     success: false,
+    //   });
 
       //cloudinary ayega idhar
 
-      const skillsArray = skills.split(",");
+      let skillsArray;
+      if(skills){
+          skillsArray = skills.split(",");
+      }
       const userId = req.id; //middleware authentication
       let user = await User.findById(userId);
 
@@ -134,18 +137,18 @@ export const updateProfile = async (req, res) => {
         });
       }
       // updating data
-      ((user.fullname = fullname),
-        (user.email = email),
-        (user.phoneNumber = phoneNumber),
-        (user.profile.bio = bio),
-        (user.profile.skills = skillsArray));
+      if(fullName) user.fullName = fullName
+      if(email) user.email = email
+      if(phoneNumber) user.phoneNumber = phoneNumber
+      if(bio) user.profile.bio = bio
+      if(skills) user.profile.skills = skillsArray
 
       // resume comes here later
       await user.save();
 
       user = {
         _id: user._id,
-        fullname: user.fullname,
+        fullName: user.fullName,
         email: user.email,
         phoneNumber: user.phoneNumber,
         role: user.role,
@@ -157,7 +160,7 @@ export const updateProfile = async (req, res) => {
         success: true,
       });
     }
-  } catch (error) {
+   catch (error) {
     console.log(error);
   }
 };

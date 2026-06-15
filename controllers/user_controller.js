@@ -42,7 +42,7 @@ export const login = async (req, res) => {
     if (!email || !password || !role) {
       return res.status(400).json({
         message: "Something is missing",
-        success: false
+        success: false,
       });
     }
     let user = await User.findOne({ email });
@@ -60,7 +60,7 @@ export const login = async (req, res) => {
       });
     }
     // check role is correct or not
-    if ((role !== user.role)) {
+    if (role !== user.role) {
       return res.status(400).json({
         message: "Account doesn't exist with current role.",
         success: false,
@@ -114,53 +114,53 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { fullName, email, phoneNumber, bio, skills } = req.body;
+
     const file = req.file;
-    // if (!fullName || !email || !phoneNumber || !bio || !skills) {
-    //   return res.status(400).json({
-    //     message: "Something is missing",
-    //     success: false,
-    //   });
+    // cloudinary
+    const fileUri = getDataUri(file);
+    const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
-      //cloudinary ayega idhar
+    let skillsArray;
+    if (skills) {
+      skillsArray = skills.split(",");
+    }
+    const userId = req.id; //middleware authentication
+    let user = await User.findById(userId);
 
-      let skillsArray;
-      if(skills){
-          skillsArray = skills.split(",");
-      }
-      const userId = req.id; //middleware authentication
-      let user = await User.findById(userId);
-
-      if (!user) {
-        return res.status(400).json({
-          message: "User not found.",
-          success: false,
-        });
-      }
-      // updating data
-      if(fullName) user.fullName = fullName
-      if(email) user.email = email
-      if(phoneNumber) user.phoneNumber = phoneNumber
-      if(bio) user.profile.bio = bio
-      if(skills) user.profile.skills = skillsArray
-
-      // resume comes here later
-      await user.save();
-
-      user = {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        profile: user.profile,
-      };
-      return res.status(200).json({
-        message: "Profile updated successfully.",
-        user,
-        success: true,
+    if (!user) {
+      return res.status(400).json({
+        message: "User not found.",
+        success: false,
       });
     }
-   catch (error) {
+    // updating data
+    if (fullName) user.fullName = fullName;
+    if (email) user.email = email;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (bio) user.profile.bio = bio;
+    if (skills) user.profile.skills = skillsArray;
+
+    // resume comes later here...
+    if (cloudResponse) {
+      user.profile.resume = cloudResponse.secure_url; // save the cloudinary url
+      user.profile.resumeOriginalName = file.originalname; // Save the original file name
+    }
+    await user.save();
+
+    user = {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      profile: user.profile,
+    };
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      user,
+      success: true,
+    });
+  } catch (error) {
     console.log(error);
   }
 };

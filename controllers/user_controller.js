@@ -1,6 +1,8 @@
 import { User } from "../models/user_model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import dataUri from "../utils/datauri.js";
+import cloudinary from "../utils/cloudinary.js";
 
 export const register = async (req, res) => {
   try {
@@ -11,6 +13,11 @@ export const register = async (req, res) => {
         success: false,
       });
     }
+
+    const file = req.file;
+    const fileUri = dataUri(file);
+    const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+
     const user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({
@@ -26,6 +33,9 @@ export const register = async (req, res) => {
       phoneNumber,
       password: hashedPassword,
       role,
+      profile:{
+        profilePhoto:cloudResponse.secure_url,
+      }
     });
     return res.status(201).json({
       message: "Account created successfully.",
@@ -76,7 +86,7 @@ export const login = async (req, res) => {
 
     user = {
       _id: user._id,
-      fullname: user.fullName,
+      fullName: user.fullName,
       email: user.email,
       phoneNumber: user.phoneNumber,
       role: user.role,
@@ -91,7 +101,7 @@ export const login = async (req, res) => {
         sameSite: "strict",
       })
       .json({
-        message: `Welcome back ${user.fullname}`,
+        message: `Welcome back ${user.fullName}`,
         user,
         success: true,
       });
@@ -117,8 +127,9 @@ export const updateProfile = async (req, res) => {
 
     const file = req.file;
     // cloudinary
-    const fileUri = getDataUri(file);
+    const fileUri = dataUri(file);
     const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+    
 
     let skillsArray;
     if (skills) {
@@ -145,6 +156,7 @@ export const updateProfile = async (req, res) => {
       user.profile.resume = cloudResponse.secure_url; // save the cloudinary url
       user.profile.resumeOriginalName = file.originalname; // Save the original file name
     }
+    
     await user.save();
 
     user = {

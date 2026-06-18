@@ -11,9 +11,9 @@ export const applyJob = async (req,res) => {
                 success:false
             })
         }
-        console.log("jobid:",jobId);
+        
         // check if the user has already applied for the job
-        const existingApplication = await Application.findOne({job: jobId, applicant: userId});
+        const existingApplication = await Application.findOne({job: jobId, applicant: userId });
 
         if(existingApplication){
             return res.status(400).json({
@@ -36,7 +36,7 @@ export const applyJob = async (req,res) => {
             applicant:userId,
         })
 
-        job.application.push(newApplication._id);
+        job.applications.push(newApplication._id);
         await job.save();
         return res.status(201).json({
             message:"Job applied successfully.",
@@ -76,7 +76,7 @@ export const getApplicants = async (req,res) => {
     try {
         const jobId = req.params.id;
         const job = await Job.findById(jobId).populate({
-            path:'application',
+            path:'applications',
             options:{sort:{createdAt:-1}},
             populate:{
                 path:'applicant'
